@@ -63,6 +63,10 @@ export const TableContainer = styled.section`
       line-height: 24px;
     }
 
+    th:nth-of-type(2) {
+      text-align: right;
+    }
+
     td {
       padding: 20px 32px;
       border: 0;
@@ -77,10 +81,12 @@ export const TableContainer = styled.section`
 
       &.income {
         color: #12a454;
+        text-align: right;
       }
 
       &.outcome {
         color: #e83f5b;
+        text-align: right;
       }
     }
 
