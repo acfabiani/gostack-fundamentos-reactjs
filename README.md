@@ -1,140 +1,94 @@
 ## :rocket: Sobre o desafio
-Aplicação deve armazenar transações financeiras de entrada e saída e permitir o cadastro e a listagem dessas transações, além de permitir a criação de novos registros no banco de dados a partir do envio de um arquivo csv.
-Incluindo o uso de banco de dados com o TypeORM e envio de arquivos com o Multer
+Aplicação deve exibir as transações financeiras de entrada e saída, além de permitir a criação de novos registros no banco de dados a partir do envio de um arquivo csv.
+Utlizando a api para manipulação dos dados.
 
-### Rotas da aplicação
+## :exclamation: Preparando o backend
 
-- **`POST /transactions`**: A rota deve receber `title`, `value`, `type`, e `category` dentro do corpo da requisição, sendo o `type` o tipo da transação, que deve ser `income` para entradas (depósitos) e `outcome` para saídas (retiradas). Ao cadastrar uma nova transação, ela deve ser armazenada dentro do seu banco de dados, possuindo os campos `id`, `title`, `value`, `type`, `category_id`, `created_at`, `updated_at`.
+Antes de tudo, para que seu frontend se conecte corretamente ao backend, vá até a pasta do seu `backend` e execute os comandos `yarn add cors` e depois `yarn add @types/cors -D`.
 
-**Dica**: Para a categoria, você deve criar uma nova tabela, que terá os campos `id`, `title`, `created_at`, `updated_at`.
+Depois disso vá até o seu `app.ts` ainda no backend, e importe o `cors` e adicione `app.use(cors())` antes da linha que contém `app.use(routes)`;
 
-**Dica 2**: Antes de criar uma nova categoria, sempre verifique se já existe uma categoria com o mesmo título. Caso ela exista, use o `id` já existente no banco de dados.
+Além disso, tenha certeza que as informações da categoria, estão sendo retornadas junto com a transação do seu backend no formato como o seguinte:
 
 ```json
 {
-  "id": "uuid",
-  "title": "Salário",
-  "value": 3000,
+  "id": "c0512e43-6589-4dc8-bd0c-2a3f71b347aa",
+  "title": "Loan",
   "type": "income",
-  "category": "Alimentação"
-}
-```
-
-- **`GET /transactions`**: Essa rota deve retornar uma listagem com todas as transações que você cadastrou até agora, junto com o valor da soma de entradas, retiradas e total de crédito. Essa rota deve retornar um objeto o seguinte formato:
-
-```json
-{
-  "transactions": [
-    {
-      "id": "uuid",
-      "title": "Salário",
-      "value": 4000,
-      "type": "income",
-      "category": {
-        "id": "uuid",
-        "title": "Salary",
-        "created_at": "2020-04-20T00:00:49.620Z",
-        "updated_at": "2020-04-20T00:00:49.620Z"
-      },
-      "created_at": "2020-04-20T00:00:49.620Z",
-      "updated_at": "2020-04-20T00:00:49.620Z"
-    },
-    {
-      "id": "uuid",
-      "title": "Freela",
-      "value": 2000,
-      "type": "income",
-      "category": {
-        "id": "uuid",
-        "title": "Others",
-        "created_at": "2020-04-20T00:00:49.620Z",
-        "updated_at": "2020-04-20T00:00:49.620Z"
-      },
-      "created_at": "2020-04-20T00:00:49.620Z",
-      "updated_at": "2020-04-20T00:00:49.620Z"
-    },
-    {
-      "id": "uuid",
-      "title": "Pagamento da fatura",
-      "value": 4000,
-      "type": "outcome",
-      "category": {
-        "id": "uuid",
-        "title": "Others",
-        "created_at": "2020-04-20T00:00:49.620Z",
-        "updated_at": "2020-04-20T00:00:49.620Z"
-      },
-      "created_at": "2020-04-20T00:00:49.620Z",
-      "updated_at": "2020-04-20T00:00:49.620Z"
-    },
-    {
-      "id": "uuid",
-      "title": "Cadeira Gamer",
-      "value": 1200,
-      "type": "outcome",
-      "category": {
-        "id": "uuid",
-        "title": "Recreation",
-        "created_at": "2020-04-20T00:00:49.620Z",
-        "updated_at": "2020-04-20T00:00:49.620Z"
-      },
-      "created_at": "2020-04-20T00:00:49.620Z",
-      "updated_at": "2020-04-20T00:00:49.620Z"
-    }
-  ],
-  "balance": {
-    "income": 6000,
-    "outcome": 5200,
-    "total": 800
+  "value": "1500.00",
+  "category_id": "d93eccc7-64bb-4268-b825-9200103f3a8b",
+  "created_at": "2020-04-20T00:00:49.620Z",
+  "updated_at": "2020-04-20T00:00:49.620Z",
+  "category": {
+    "id": "d93eccc7-64bb-4268-b825-9200103f3a8b",
+    "title": "Others",
+    "created_at": "2020-04-20T00:00:49.594Z",
+    "updated_at": "2020-04-20T00:00:49.594Z"
   }
 }
 ```
 
-**Dica**: Dentro de balance, o income é a soma de todos os valores das transações com `type` income. O outcome é a soma de todos os valores das transações com `type` outcome, e o total é o valor de `income - outcome`.
+Para isso, você pode utilizar a funcionalidade de eager loading do TypeORM, adicionando o seguinte na sua model de transactions:
 
-**Dica 2**: Para fazer a soma dos valores, você pode usar a função [reduce](https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce) para agrupar as transações pela propriedade `type`, assim você irá conseguir somar todos os valores com facilidade e obter o retorno do `balance`.
+```js
+@ManyToOne(() => Category, category => category.transaction, { eager: true })
+@JoinColumn({ name: 'category_id' })
+category: Category;
+```
 
-- **`DELETE /transactions/:id`**: A rota deve deletar uma transação com o `id` presente nos parâmetros da rota;
+Lembre também de fazer o mesmo na model de Category, mas referenciando a tabela de Transaction.
 
-* **`POST /transactions/import`**: A rota deve permitir a importação de um arquivo com formato `.csv` contendo as mesmas informações necessárias para criação de uma transação `id`, `title`, `value`, `type`, `category_id`, `created_at`, `updated_at`, onde cada linha do arquivo CSV deve ser um novo registro para o banco de dados, e por fim retorne todas as `transactions` que foram importadas para seu banco de dados. O arquivo csv, deve seguir o seguinte [modelo](./assets/file.csv)
+```js
+@OneToMany(() => Transaction, transaction => transaction.category)
+transaction: Transaction;
+```
+
+### Rotas da aplicação
+
+- **`Listar as transações da sua API`**: Sua página `Dashboard` deve ser capaz de exibir uma listagem através de uma tabela, com o campo `title`, `value`, `type` e `category` de todas as transações que estão cadastradas na sua API.
+
+**Dica**: Você pode utilizar a função [Intl](https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/NumberFormat) para formatar os valores. Dentro da pasta `utils` no template você encontrará um código para te ajudar.
+
+- **`Exibir o balance da sua API`**: Sua página `Dashboard`, você deve exibir o balance que é retornado do seu backend, contendo o total geral, junto ao total de entradas e saídas.
+
+- **`Importar arquivos CSV`**: Na sua página `Import`, você deve permitir o envio de um arquivo no formato `csv` para o seu backend, que irá fazer a importação das transações para o seu banco de dados. O arquivo csv deve seguir o seguinte [modelo](https://github.com/Rocketseat/bootcamp-gostack-desafios/blob/master/desafio-database-upload/assets/file.csv).
+
+**Dica**: Deixamos disponível um componente chamado `Upload` na pasta `components` para você ter já preparado uma opção de drag-n-drop para o upload de arquivos. PS: Caso você esteja no windows e esteja sofrendo com algum erro ao tentar importar CSV, altere o tipo de arquivo dentro do arquivo `components/upload/index.ts` de `text/csv` para `.csv, application/vnd.ms-excel, text/csv`.
+
+**Dica 2**: Utilize o [FormData()](https://developer.mozilla.org/pt-BR/docs/Web/API/FormData/FormData) para conseguir enviar o seu arquivo para o seu backend.
 
 ### Específicação dos testes
 
 Para esse desafio temos os seguintes testes:
 
-<h4 align="center">
-  ⚠️ Antes de rodar os testes, crie um banco de dados com o nome "gostack_desafio06_tests" para que todos os testes possam executar corretamente ⚠️
-</h4>
+- **`should be able to list the total balance inside the cards`**: Para que esse teste passe, sua aplicação deve permitir que seja exibido na sua Dashboard, cards contendo o total de `income`, `outcome` e o total da subtração de `income - outcome` que são retornados pelo balance do seu backend.
 
-- **`should be able to create a new transaction`**: Para que esse teste passe, sua aplicação deve permitir que uma transação seja criada, e retorne um json com a transação criado.
+* **`should be able to list the transactions`**: Para que esse teste passe, sua aplicação deve permitir que sejam listados dentro de uma tabela, toda as transações que são retornadas do seu backend.
 
-* **`should create tags when inserting new transactions`**: Para que esse teste passe, sua aplicação deve permitir que ao criar uma nova transação com uma categoria que não existe, essa seja criada e inserida no campo category_id da transação com o `id` que acabou de ser criado.
+**Dica**: Para a exibição dos valores na listagem de transações, as transações com tipo `income` devem exibir os valores no formado `R$ 5.500,00`. Transações do tipo `outcome` devem exibir os valores no formado `- R$ 5.500,00`.
 
-- **`should not create tags when they already exists`**: Para que esse teste passe, sua aplicação deve permitir que ao criar uma nova transação com uma categoria que já existe, seja atribuído ao campo category_id da transação com o `id` dessa categoria existente, não permitindo a criação de categorias com o mesmo `title`.
+- **`should be able to navigate to the import page`**: Para que esse teste passe, você deve permitir a troca de página através do Header, pelo botão que contém o nome `Importar`.
 
-* **`should be able to list the transactions`**: Para que esse teste passe, sua aplicação deve permitir que seja retornado um array de objetos contendo todas as transações junto ao balanço de income, outcome e total das transações que foram criadas até o momento.
+**Dica**: Utilize o componente `Link` que é exportado do `react-router-dom`, passando a propriedade `to` que leva para a página `/import`.
 
-- **`should not be able to create outcome transaction without a valid balance`**: Para que esse teste passe, sua aplicação não deve permitir que uma transação do tipo `outcome` extrapole o valor total que o usuário tem em caixa (total de income), retornando uma resposta com código HTTP 400 e uma mensagem de erro no seguinte formato: `{ error: string }`.
+- **`should be able to upload a file`**: Para que esse teste passe, você deve permitir que um arquivo seja enviado através do componente de drag-n-drop na página de `import`, e que seja possível exibir o nome do arquivo enviado para o input.
 
-* **`should be able to delete a transaction`**: Para que esse teste passe, você deve permitir que a sua rota de delete exclua uma transação, e ao fazer a exclusão, ele retorne uma resposta vazia, com status 204.
-
-- **`should be able to import transactions`**: Para que esse teste passe, sua aplicação deve permitir que seja importado um arquivo csv, contendo o seguinte [modelo](./assets/file.csv). Com o arquivo importado, você deve permitir que seja criado no banco de dados todos os registros e categorias que estavam presentes nesse arquivo, e retornar todas as transactions que foram importadas.
-
-**Dica**: Caso você tenha dificuldades com a leitura de CSV, temos um [guia no Notion](https://www.notion.so/Importando-arquivos-CSV-com-Node-js-2172338480cb47e28a5d3ed9981c38a0).
+**Dica**: Deixamos disponível um componente chamado `FileList` na pasta `components` para ajudar você a listar os arquivos que enviar pelo componente de `Upload`, ele deve exibir o título do arquivo e o tamanho dele.
 
 ## :carousel_horse: Como usar
+## Pré requisitos
+- API back-end [gostack-typeorm-upload](https://github.com/acfabiani/gostack-typeorm-upload)
+## Iniciando o projeto
 - Clone o repositório
 - Baixe as dependências
     ```bash
     $ yarn
     ```
-- Crie um banco de dados com o nome "gostack_desafio06" e altere as configurações do arquivo ormconfig.json de acordo com os dados da conexão.
-- Rode a API
+- Rode o aplicativo
     ```bash
-    $ yarn dev:server
+    $ yarn start
     ```
 - Para rodar os testes
-- Crie um banco de dados com o nome "gostack_desafio06_tests"
     ```bash
     $ yarn test
     ```
