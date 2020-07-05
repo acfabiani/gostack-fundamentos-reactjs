@@ -31,12 +31,12 @@ export const Container = styled.div<ContainerProps>`
         &:hover {
           opacity: 0.6;
           padding-bottom: 10px;
-          border-bottom: orange 2px solid;
+          border-bottom: #ff872c 2px solid;
         }
 
         &.active {
           padding-bottom: 10px;
-          border-bottom: orange 2px solid;
+          border-bottom: #ff872c 2px solid;
         }
       }
     }
